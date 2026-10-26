@@ -1,0 +1,6 @@
+# Keep paid digital product deliverables private
+Client freelance kit/
+*.zip
+*.rar
+.DS_Store
+Thumbs.db

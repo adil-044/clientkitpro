@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClientForge PRO — Live Meta Ads & Clickstream Dashboard</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                    },
+                    colors: {
+                        dark: {
+                            950: '#06080d',
+                            900: '#0b0f17',
+                            850: '#111723',
+                            800: '#171f2f',
+                            700: '#232f45',
+                            600: '#334155'
+                        },
+                        brand: {
+                            400: '#818cf8',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca'
+                        },
+                        emeraldAccent: {
+                            400: '#34d399',
+                            500: '#10b981',
+                            600: '#059669'
+                        },
+                        amberAccent: {
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                            600: '#d97706'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #06080d; color: #e2e8f0; }
+        .glass-panel { background: rgba(17, 23, 35, 0.75); backdrop-filter: blur(14px); border: 1px solid rgba(255, 255, 255, 0.08); }
+        .live-pulse {
+            width: 8px; height: 8px; border-radius: 50%; background-color: #10b981;
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            animation: pulse-green 1.8s infinite;
+        }
+        @keyframes pulse-green {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0b0f17; }
+        ::-webkit-scrollbar-thumb { background: #232f45; border-radius: 3px; }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col selection:bg-brand-500 selection:text-white">
+
+    <!-- Top Navigation -->
+    <header class="glass-panel border-b border-dark-700/60 sticky top-0 z-40 bg-dark-950/85">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-500 flex items-center justify-center text-white font-bold text-sm shadow-md">
+                    CF
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-base font-extrabold text-white">ClientForge PRO</h1>
+                        <span class="text-[10px] bg-brand-500/20 text-brand-300 font-bold px-2 py-0.5 rounded border border-brand-500/30">
+                            TELEMETRY v2.0
+                        </span>
+                    </div>
+                    <p class="text-[11px] text-slate-400">Meta Ads Attribution & Customer Experience Intelligence</p>
+                </div>
+            </div>
+
+            <!-- Status Indicator & Actions -->
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2 bg-dark-900 border border-dark-700 px-3 py-1.5 rounded-lg text-xs">
+                    <span class="live-pulse"></span>
+                    <span class="text-slate-300 font-medium">Live Stream Active</span>
+                </div>
+                <a href="index.html" target="_blank" class="text-xs bg-dark-800 hover:bg-dark-700 text-slate-300 hover:text-white px-3 py-1.5 rounded-lg border border-dark-750 transition-colors flex items-center gap-1.5">
+                    <span>View Landing Page</span>
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                </a>
+                <button onclick="exportCSV()" class="text-xs bg-brand-600 hover:bg-brand-500 text-white font-bold px-3 py-1.5 rounded-lg transition-colors">
+                    Export Data (CSV)
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+        <!-- Top Key Performance Indicator Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <!-- Total Page Views -->
+            <div class="glass-panel p-5 rounded-2xl relative overflow-hidden">
+                <div class="flex justify-between items-start">
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Ad Visits</p>
+                    <span class="text-brand-400 bg-brand-500/10 p-2 rounded-xl text-lg">👁️</span>
+                </div>
+                <h3 class="text-3xl font-black text-white mt-2" id="kpi-pageviews">0</h3>
+                <div class="flex items-center gap-1 text-[11px] text-slate-400 mt-2">
+                    <span class="text-emeraldAccent-400 font-bold" id="kpi-sessions">0</span>
+                    <span>active ad sessions</span>
+                </div>
+            </div>
+
+            <!-- Unique Visitors -->
+            <div class="glass-panel p-5 rounded-2xl relative overflow-hidden">
+                <div class="flex justify-between items-start">
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Unique Prospects</p>
+                    <span class="text-indigo-400 bg-indigo-500/10 p-2 rounded-xl text-lg">👤</span>
+                </div>
+                <h3 class="text-3xl font-black text-white mt-2" id="kpi-uniques">0</h3>
+                <div class="flex items-center gap-1 text-[11px] text-slate-400 mt-2">
+                    <span class="text-emeraldAccent-400 font-bold" id="kpi-mobile-pct">0%</span>
+                    <span>mobile device share</span>
+                </div>
+            </div>
+
+            <!-- Checkout Clicks to Mintlink -->
+            <div class="glass-panel p-5 rounded-2xl relative overflow-hidden border-emeraldAccent-500/30">
+                <div class="flex justify-between items-start">
+                    <p class="text-xs font-bold text-emeraldAccent-400 uppercase tracking-wider">Checkout Clicks (Mintlink)</p>
+                    <span class="text-emeraldAccent-400 bg-emeraldAccent-500/10 p-2 rounded-xl text-lg">🛒</span>
+                </div>
+                <h3 class="text-3xl font-black text-emeraldAccent-400 mt-2" id="kpi-checkouts">0</h3>
+                <div class="flex items-center gap-1 text-[11px] text-slate-400 mt-2">
+                    <span>Target URL: </span>
+                    <a href="https://mintlink.in/m/clientkitpro" target="_blank" class="text-brand-400 underline font-mono text-[10px]">
+                        mintlink.in/m/clientkitpro
+                    </a>
+                </div>
+            </div>
+
+            <!-- Conversion Rate (CTR %) -->
+            <div class="glass-panel p-5 rounded-2xl relative overflow-hidden border-amberAccent-500/30">
+                <div class="flex justify-between items-start">
+                    <p class="text-xs font-bold text-amberAccent-400 uppercase tracking-wider">Click-to-Checkout (CTR)</p>
+                    <span class="text-amberAccent-400 bg-amberAccent-500/10 p-2 rounded-xl text-lg">📈</span>
+                </div>
+                <h3 class="text-3xl font-black text-white mt-2" id="kpi-ctr">0.0%</h3>
+                <div class="flex items-center gap-1 text-[11px] text-slate-400 mt-2">
+                    <span class="text-slate-400">Benchmark for ₹99 impulse buy: ~8-15%</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Meta Ad Campaign URL Generator & Quick Builder -->
+        <div class="glass-panel p-6 rounded-2xl border border-brand-500/30 bg-gradient-to-r from-dark-900 via-dark-850 to-dark-900">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4">
+                <div>
+                    <h2 class="text-base font-extrabold text-white flex items-center gap-2">
+                        <span>🎯 Meta Ads Manager Campaign URL Builder</span>
+                        <span class="text-[10px] bg-emerald-500/20 text-emerald-400 font-bold px-2 py-0.5 rounded">
+                            Ad-Ready
+                        </span>
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-0.5">
+                        Fill in your Meta Ad parameters below to generate the exact link with full attribution tracking for your Meta Ad Set.
+                    </p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="generateSampleTraffic()" class="text-xs bg-dark-800 hover:bg-dark-700 text-slate-300 px-3 py-1.5 rounded-lg border border-dark-700 transition-colors">
+                        Simulate Sample Ad Traffic
+                    </button>
+                    <button onclick="clearAnalytics()" class="text-xs text-rose-400 hover:text-rose-300 px-3 py-1.5 rounded-lg hover:bg-rose-950/20 transition-colors">
+                        Clear Data
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs mb-3">
+                <div>
+                    <label class="block font-semibold text-slate-300 mb-1">Campaign Name (utm_campaign)</label>
+                    <input type="text" id="builder-campaign" value="freelance_launch_v1" class="w-full bg-dark-950 border border-dark-700 rounded-lg p-2 text-white font-mono focus:border-brand-500 focus:outline-none" oninput="buildMetaUrl()">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-300 mb-1">Ad Set / Target Niche (utm_term)</label>
+                    <input type="text" id="builder-adset" value="video_editors_b2b" class="w-full bg-dark-950 border border-dark-700 rounded-lg p-2 text-white font-mono focus:border-brand-500 focus:outline-none" oninput="buildMetaUrl()">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-300 mb-1">Ad Creative / Hook (utm_content)</label>
+                    <input type="text" id="builder-creative" value="carousel_scripts_hook" class="w-full bg-dark-950 border border-dark-700 rounded-lg p-2 text-white font-mono focus:border-brand-500 focus:outline-none" oninput="buildMetaUrl()">
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 bg-dark-950 p-2.5 rounded-xl border border-dark-700">
+                <span class="text-xs font-mono text-slate-400 select-all overflow-x-auto flex-1 whitespace-nowrap" id="generated-url">
+                    https://adil-044.github.io/clientkitpro/?utm_source=meta&utm_medium=cpc&utm_campaign=freelance_launch_v1&utm_term=video_editors_b2b&utm_content=carousel_scripts_hook
+                </span>
+                <button onclick="copyGeneratedUrl(this)" class="shrink-0 text-xs font-bold bg-brand-600 hover:bg-brand-500 text-white px-3.5 py-1.5 rounded-lg transition-colors flex items-center gap-1.5">
+                    <span>Copy URL</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Funnel & Drop-off Bar Chart -->
+            <div class="glass-panel p-6 rounded-2xl lg:col-span-2">
+                <div class="flex justify-between items-center mb-4">
+                    <div>
+                        <h3 class="text-sm font-bold text-white">Prospect Conversion Funnel</h3>
+                        <p class="text-xs text-slate-400">Step-by-step customer drop-off from ad arrival to Mintlink checkout</p>
+                    </div>
+                    <span class="text-xs font-mono text-brand-400 bg-brand-500/10 px-2 py-1 rounded">Funnel Analysis</span>
+                </div>
+                <div class="h-64 relative">
+                    <canvas id="funnelChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Traffic Sources Donut -->
+            <div class="glass-panel p-6 rounded-2xl">
+                <div class="flex justify-between items-center mb-4">
+                    <div>
+                        <h3 class="text-sm font-bold text-white">Traffic Sources</h3>
+                        <p class="text-xs text-slate-400">Meta Ads vs Organic vs Social</p>
+                    </div>
+                </div>
+                <div class="h-64 relative flex items-center justify-center">
+                    <canvas id="sourceChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Live Visitor Stream Table -->
+        <div class="glass-panel rounded-2xl overflow-hidden border border-dark-700">
+            <div class="p-6 border-b border-dark-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h3 class="text-base font-extrabold text-white flex items-center gap-2">
+                        <span>Live Visitor Clickstream & Customer Experience Log</span>
+                        <span class="live-pulse"></span>
+                    </h3>
+                    <p class="text-xs text-slate-400 mt-0.5">Click any row to view the visitor's complete step-by-step journey</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <input type="text" id="filter-search" placeholder="Search Campaign, City, Ad..." class="bg-dark-950 border border-dark-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-brand-500" oninput="renderTable()">
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-slate-300">
+                    <thead class="bg-dark-900 border-b border-dark-800 text-[11px] uppercase font-bold text-slate-400">
+                        <tr>
+                            <th class="py-3.5 px-4">Time</th>
+                            <th class="py-3.5 px-4">Location</th>
+                            <th class="py-3.5 px-4">Source / Platform</th>
+                            <th class="py-3.5 px-4">Meta Campaign / Creative</th>
+                            <th class="py-3.5 px-4">Device</th>
+                            <th class="py-3.5 px-4">Engagement</th>
+                            <th class="py-3.5 px-4">Max Scroll</th>
+                            <th class="py-3.5 px-4">Status / Action</th>
+                            <th class="py-3.5 px-4 text-right">Journey</th>
+                        </tr>
+                    </thead>
+                    <tbody id="visitors-table-body" class="divide-y divide-dark-800 font-mono">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="empty-state" class="p-12 text-center text-slate-500 hidden">
+                <p class="text-sm">No visitor events recorded yet.</p>
+                <p class="text-xs mt-1">Open the landing page or click "Simulate Sample Ad Traffic" to test.</p>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Customer Journey Detail Modal (Replay) -->
+    <div id="journey-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="glass-panel w-full max-w-2xl rounded-2xl border border-dark-700 bg-dark-900 overflow-hidden shadow-2xl flex flex-col max-h-[85vh]">
+            <div class="p-5 border-b border-dark-750 flex items-center justify-between bg-dark-950">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-brand-500/20 text-brand-400 flex items-center justify-center font-bold text-xs" id="modal-visitor-avatar">
+                        CF
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-bold text-white" id="modal-visitor-id">Visitor Session History</h4>
+                        <p class="text-xs text-slate-400" id="modal-visitor-meta">Loading...</p>
+                    </div>
+                </div>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-dark-800">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <!-- Timeline Body -->
+            <div class="p-6 overflow-y-auto space-y-4 flex-1 font-sans" id="modal-timeline">
+                <!-- Timeline items -->
+            </div>
+
+            <div class="p-4 bg-dark-950 border-t border-dark-750 flex justify-between items-center text-xs">
+                <span class="text-slate-500">Events logged in chronological order</span>
+                <button onclick="closeModal()" class="px-4 py-1.5 rounded-lg bg-dark-800 text-white font-medium hover:bg-dark-700">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analytics Dashboard Engine JS -->
+    <script>
+        const STORAGE_KEY_LOGS = "clientforge_analytics_events";
+        let funnelChartInstance = null;
+        let sourceChartInstance = null;
+        let cachedSessions = {};
+
+        // Real-time broadcast channel listener
+        if ("BroadcastChannel" in window) {
+            const bc = new BroadcastChannel("clientforge_analytics_channel");
+            bc.onmessage = (msg) => {
+                if (msg.data && msg.data.type === "NEW_EVENT") {
+                    refreshDashboard();
+                }
+            };
+        }
+
+        // Storage listener for cross-tab updates
+        window.addEventListener("storage", (e) => {
+            if (e.key === STORAGE_KEY_LOGS) refreshDashboard();
+        });
+
+        function getEvents() {
+            try {
+                return JSON.parse(localStorage.getItem(STORAGE_KEY_LOGS) || "[]");
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function groupEventsBySession(events) {
+            const sessions = {};
+            events.forEach(ev => {
+                const sId = ev.sessionId || "anonymous";
+                if (!sessions[sId]) {
+                    sessions[sId] = {
+                        sessionId: sId,
+                        visitorId: ev.visitorId,
+                        startTime: ev.timestamp,
+                        lastTime: ev.timestamp,
+                        timeFormatted: ev.timeFormatted,
+                        geo: ev.geo || { country: "India", city: "Mumbai" },
+                        device: ev.device || { device: "Mobile", os: "Android", browser: "Chrome" },
+                        attribution: ev.attribution || {},
+                        events: [],
+                        hasCheckout: false,
+                        maxScroll: 0,
+                        engagementSeconds: 0
+                    };
+                }
+
+                sessions[sId].events.push(ev);
+                if (ev.name === "checkout_click") sessions[sId].hasCheckout = true;
+                if (ev.name === "scroll_depth" && ev.details?.percent > sessions[sId].maxScroll) {
+                    sessions[sId].maxScroll = ev.details.percent;
+                }
+                if (ev.name === "time_on_page" && ev.details?.seconds > sessions[sId].engagementSeconds) {
+                    sessions[sId].engagementSeconds = ev.details.seconds;
+                }
+                sessions[sId].lastTime = ev.timestamp;
+            });
+            return sessions;
+        }
+
+        function refreshDashboard() {
+            const events = getEvents();
+            const sessions = groupEventsBySession(events);
+            cachedSessions = sessions;
+
+            const sessionList = Object.values(sessions);
+            const totalPageviews = events.filter(e => e.name === "pageview").length;
+            const uniqueVisitors = new Set(events.map(e => e.visitorId)).size;
+            const checkoutClicks = events.filter(e => e.name === "checkout_click").length;
+            const ctr = totalPageviews > 0 ? ((checkoutClicks / totalPageviews) * 100).toFixed(1) : 0;
+
+            const mobileCount = sessionList.filter(s => s.device.device === "Mobile").length;
+            const mobilePct = sessionList.length > 0 ? Math.round((mobileCount / sessionList.length) * 100) : 0;
+
+            // Update KPI cards
+            document.getElementById("kpi-pageviews").innerText = totalPageviews;
+            document.getElementById("kpi-sessions").innerText = sessionList.length;
+            document.getElementById("kpi-uniques").innerText = uniqueVisitors;
+            document.getElementById("kpi-mobile-pct").innerText = mobilePct + "%";
+            document.getElementById("kpi-checkouts").innerText = checkoutClicks;
+            document.getElementById("kpi-ctr").innerText = ctr + "%";
+
+            renderCharts(events, sessionList);
+            renderTable();
+        }
+
+        function renderCharts(events, sessionList) {
+            // Funnel Metrics
+            const totalVisits = sessionList.length;
+            const scrolled50 = sessionList.filter(s => s.maxScroll >= 50).length;
+            const interacted = sessionList.filter(s => s.events.some(e => e.name === "faq_opened" || e.name === "script_copied" || e.name === "geo_resolved")).length;
+            const clickedCheckout = sessionList.filter(s => s.hasCheckout).length;
+
+            const funnelCtx = document.getElementById("funnelChart").getContext("2d");
+            if (funnelChartInstance) funnelChartInstance.destroy();
+            funnelChartInstance = new Chart(funnelCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['1. Ad Visit', '2. Scrolled 50%+', '3. Explored Scripts', '4. Clicked ₹99 Checkout'],
+                    datasets: [{
+                        label: 'Prospects',
+                        data: [totalVisits, scrolled50, interacted, clickedCheckout],
+                        backgroundColor: ['#6366f1', '#818cf8', '#f59e0b', '#10b981'],
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
+                        x: { grid: { display: false }, ticks: { color: '#cbd5e1' } }
+                    }
+                }
+            });
+
+            // Sources Donut
+            const sourceCounts = { "Meta Ads": 0, "Instagram": 0, "Facebook": 0, "Direct": 0, "Other": 0 };
+            sessionList.forEach(s => {
+                const src = (s.attribution?.utm_source || "").toLowerCase();
+                const platform = (s.attribution?.source_platform || "").toLowerCase();
+                if (src.includes("meta") || src.includes("cpc")) sourceCounts["Meta Ads"]++;
+                else if (src.includes("instagram") || platform.includes("instagram")) sourceCounts["Instagram"]++;
+                else if (src.includes("facebook") || platform.includes("facebook")) sourceCounts["Facebook"]++;
+                else if (src.includes("direct") || platform.includes("direct")) sourceCounts["Direct"]++;
+                else sourceCounts["Other"]++;
+            });
+
+            const sourceCtx = document.getElementById("sourceChart").getContext("2d");
+            if (sourceChartInstance) sourceChartInstance.destroy();
+            sourceChartInstance = new Chart(sourceCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(sourceCounts),
+                    datasets: [{
+                        data: Object.values(sourceCounts),
+                        backgroundColor: ['#6366f1', '#ec4899', '#3b82f6', '#10b981', '#64748b'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 11 } } }
+                    }
+                }
+            });
+        }
+
+        function renderTable() {
+            const query = (document.getElementById("filter-search").value || "").toLowerCase();
+            const tbody = document.getElementById("visitors-table-body");
+            const emptyState = document.getElementById("empty-state");
+            const sessionList = Object.values(cachedSessions);
+
+            const filtered = sessionList.filter(s => {
+                if (!query) return true;
+                const str = `${s.geo?.city} ${s.geo?.country} ${s.attribution?.utm_campaign} ${s.attribution?.utm_content} ${s.attribution?.utm_source} ${s.device?.device}`.toLowerCase();
+                return str.includes(query);
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = "";
+                emptyState.classList.remove("hidden");
+                return;
+            }
+
+            emptyState.classList.add("hidden");
+            tbody.innerHTML = filtered.map(s => {
+                const isConverted = s.hasCheckout;
+                const statusBadge = isConverted ? 
+                    `<span class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded text-[10px] font-bold">🛒 CHECKOUT CLICK</span>` : 
+                    `<span class="bg-slate-800 text-slate-400 px-2 py-0.5 rounded text-[10px]">Browsing (${s.events.length} actions)</span>`;
+
+                const flag = s.geo?.country_code === "IN" ? "🇮🇳" : "🌐";
+                const locationStr = `${flag} ${s.geo?.city || "Unknown"}, ${s.geo?.country || "India"}`;
+                const utmCampaign = s.attribution?.utm_campaign !== "none" ? s.attribution.utm_campaign : "organic";
+                const utmContent = s.attribution?.utm_content !== "none" ? ` / ${s.attribution.utm_content}` : "";
+
+                return `
+                    <tr class="hover:bg-dark-850/60 transition-colors cursor-pointer" onclick="openJourneyModal('${s.sessionId}')">
+                        <td class="py-3 px-4 text-slate-400 text-[11px]">${s.timeFormatted}</td>
+                        <td class="py-3 px-4 font-sans font-medium text-slate-200">${locationStr}</td>
+                        <td class="py-3 px-4 font-sans">
+                            <span class="text-brand-400 font-semibold">${s.attribution?.utm_source || "direct"}</span>
+                            <span class="text-slate-500 text-[10px]">(${s.attribution?.source_platform || "Direct"})</span>
+                        </td>
+                        <td class="py-3 px-4 text-slate-300 font-mono text-[11px]">
+                            <span class="text-amber-400 font-bold">${utmCampaign}</span>
+                            <span class="text-slate-400">${utmContent}</span>
+                        </td>
+                        <td class="py-3 px-4 font-sans text-slate-400">${s.device?.device} &bull; ${s.device?.os}</td>
+                        <td class="py-3 px-4 font-sans">${s.engagementSeconds}s active</td>
+                        <td class="py-3 px-4 font-sans">
+                            <div class="flex items-center gap-1.5">
+                                <div class="w-12 h-1.5 bg-dark-750 rounded-full overflow-hidden">
+                                    <div class="h-full bg-brand-500" style="width: ${s.maxScroll}%"></div>
+                                </div>
+                                <span class="text-[10px] text-slate-400">${s.maxScroll}%</span>
+                            </div>
+                        </td>
+                        <td class="py-3 px-4 font-sans">${statusBadge}</td>
+                        <td class="py-3 px-4 text-right">
+                            <button class="text-brand-400 hover:text-white text-xs underline font-sans">Inspect</button>
+                        </td>
+                    </tr>
+                `;
+            }).join("");
+        }
+
+        // Modal Journey Replay
+        function openJourneyModal(sessionId) {
+            const s = cachedSessions[sessionId];
+            if (!s) return;
+
+            document.getElementById("modal-visitor-id").innerText = `Session ${s.sessionId.substring(0, 16)}...`;
+            document.getElementById("modal-visitor-meta").innerText = `${s.geo?.city}, ${s.geo?.country} • Source: ${s.attribution?.utm_source || "direct"} • Device: ${s.device?.device} (${s.device?.os})`;
+            
+            const container = document.getElementById("modal-timeline");
+            container.innerHTML = s.events.map((ev, i) => {
+                let icon = "⚡";
+                let title = ev.name;
+                let desc = "";
+
+                if (ev.name === "pageview") {
+                    icon = "🚀";
+                    title = "Arrived on Landing Page";
+                    desc = `Referrer: ${ev.details?.referrer || "Direct"} • Campaign: ${ev.attribution?.utm_campaign || "None"}`;
+                } else if (ev.name === "scroll_depth") {
+                    icon = "📜";
+                    title = `Scrolled to ${ev.details?.percent}% of Page`;
+                    desc = ev.details?.percent >= 75 ? "Deep reading: Reached Guarantee and Pricing Sections" : "Engaged reading";
+                } else if (ev.name === "time_on_page") {
+                    icon = "⏱️";
+                    title = `Spent ${ev.details?.seconds} Seconds on Page`;
+                    desc = "High interest engaged prospect";
+                } else if (ev.name === "checkout_click") {
+                    icon = "🛒";
+                    title = "CLICKED BUY / CHECKOUT (₹99)";
+                    desc = `Button: '${ev.details?.buttonText}' at [${ev.details?.buttonLocation}] &rarr; Redirected to Mintlink.in`;
+                } else if (ev.name === "script_copied") {
+                    icon = "📋";
+                    title = "Copied Outreach Script to Clipboard";
+                    desc = `Script tested: ${ev.details?.buttonText}`;
+                } else if (ev.name === "faq_opened") {
+                    icon = "❓";
+                    title = "Expanded FAQ Accordion";
+                    desc = `Question: "${ev.details?.question}"`;
+                }
+
+                const isHighlight = ev.name === "checkout_click";
+
+                return `
+                    <div class="flex items-start gap-3 relative pb-4">
+                        <div class="w-8 h-8 rounded-full ${isHighlight ? 'bg-emerald-500 text-dark-950 font-black' : 'bg-dark-800 text-slate-300'} flex items-center justify-center shrink-0 text-sm shadow-md">
+                            ${icon}
+                        </div>
+                        <div class="flex-1 ${isHighlight ? 'p-3 rounded-xl bg-emerald-950/30 border border-emerald-500/40' : ''}">
+                            <div class="flex justify-between items-center">
+                                <p class="text-xs font-bold ${isHighlight ? 'text-emerald-300' : 'text-white'}">${title}</p>
+                                <span class="text-[10px] text-slate-500 font-mono">${ev.timeFormatted}</span>
+                            </div>
+                            <p class="text-[11px] text-slate-400 mt-0.5 leading-relaxed">${desc}</p>
+                        </div>
+                    </div>
+                `;
+            }).join("");
+
+            document.getElementById("journey-modal").classList.remove("hidden");
+        }
+
+        function closeModal() {
+            document.getElementById("journey-modal").classList.add("hidden");
+        }
+
+        // Meta Ad Builder URL Generator
+        function buildMetaUrl() {
+            const camp = encodeURIComponent(document.getElementById("builder-campaign").value.trim() || "freelance_launch_v1");
+            const term = encodeURIComponent(document.getElementById("builder-adset").value.trim() || "video_editors_b2b");
+            const content = encodeURIComponent(document.getElementById("builder-creative").value.trim() || "carousel_scripts_hook");
+            
+            const baseUrl = window.location.origin + window.location.pathname.replace("dashboard.html", "index.html");
+            const full = `${baseUrl}?utm_source=meta&utm_medium=cpc&utm_campaign=${camp}&utm_term=${term}&utm_content=${content}`;
+            document.getElementById("generated-url").innerText = full;
+        }
+
+        function copyGeneratedUrl(btn) {
+            const url = document.getElementById("generated-url").innerText;
+            navigator.clipboard.writeText(url).then(() => {
+                const old = btn.innerHTML;
+                btn.innerHTML = `<span>Copied!</span>`;
+                setTimeout(() => btn.innerHTML = old, 1500);
+            });
+        }
+
+        // Simulated Traffic Generator for immediate testing
+        function generateSampleTraffic() {
+            const sampleCities = ["Bengaluru", "Mumbai", "Delhi", "Hyderabad", "Pune", "Chennai", "Kolkata", "Ahmedabad"];
+            const sampleCreatives = ["reels_cold_email_glitch", "carousel_5_contracts", "loom_teardown_video", "upwork_proposal_hack"];
+            const sampleAdSets = ["video_editors_india", "web_developers_freelance", "copywriters_b2b", "agency_founders"];
+
+            for (let i = 0; i < 5; i++) {
+                const sId = "cf_sim_" + Math.random().toString(36).substring(2, 8);
+                const city = sampleCities[Math.floor(Math.random() * sampleCities.length)];
+                const creative = sampleCreatives[Math.floor(Math.random() * sampleCreatives.length)];
+                const adset = sampleAdSets[Math.floor(Math.random() * sampleAdSets.length)];
+                const isMobile = Math.random() > 0.3;
+                const willConvert = Math.random() > 0.55;
+
+                const baseTime = new Date(Date.now() - (i * 180000));
+                const timeStr = baseTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+                const attr = {
+                    utm_source: "meta",
+                    utm_medium: "cpc",
+                    utm_campaign: "freelance_scale_q4",
+                    utm_content: creative,
+                    utm_term: adset,
+                    source_platform: "Instagram (Organic/Ad)",
+                    fbclid: "IwAR" + Math.random().toString(36).substring(2, 12)
+                };
+
+                const dev = {
+                    device: isMobile ? "Mobile" : "Desktop",
+                    os: isMobile ? (Math.random() > 0.4 ? "Android" : "iOS") : "Windows",
+                    browser: "Chrome"
+                };
+
+                const geo = { country: "India", country_code: "IN", city: city };
+
+                // Log pageview
+                logSimulatedEvent("pageview", sId, timeStr, attr, dev, geo, { referrer: "https://l.instagram.com" });
+
+                // Log scroll
+                logSimulatedEvent("scroll_depth", sId, timeStr, attr, dev, geo, { percent: 50 });
+
+                if (willConvert) {
+                    logSimulatedEvent("scroll_depth", sId, timeStr, attr, dev, geo, { percent: 90 });
+                    logSimulatedEvent("time_on_page", sId, timeStr, attr, dev, geo, { seconds: 45 });
+                    logSimulatedEvent("checkout_click", sId, timeStr, attr, dev, geo, {
+                        buttonText: "GET CLIENTFORGE PRO — ₹99",
+                        buttonLocation: "hero_primary",
+                        url: "https://mintlink.in/m/clientkitpro"
+                    });
+                }
+            }
+            refreshDashboard();
+        }
+
+        function logSimulatedEvent(name, sessionId, timeStr, attr, dev, geo, details) {
+            const raw = localStorage.getItem(STORAGE_KEY_LOGS);
+            const events = raw ? JSON.parse(raw) : [];
+            events.unshift({
+                id: 'ev_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 5),
+                name,
+                timestamp: new Date().toISOString(),
+                timeFormatted: timeStr,
+                visitorId: "vis_" + sessionId,
+                sessionId: sessionId,
+                attribution: attr,
+                device: dev,
+                geo: geo,
+                details: details
+            });
+            localStorage.setItem(STORAGE_KEY_LOGS, JSON.stringify(events.slice(0, 500)));
+        }
+
+        function clearAnalytics() {
+            if (confirm("Are you sure you want to clear the analytics log?")) {
+                localStorage.removeItem(STORAGE_KEY_LOGS);
+                refreshDashboard();
+            }
+        }
+
+        function exportCSV() {
+            const events = getEvents();
+            if (events.length === 0) {
+                alert("No analytics data to export yet!");
+                return;
+            }
+
+            let csv = "Timestamp,SessionID,Event,Source,Medium,Campaign,AdContent,AdSet,City,Country,Device,OS,Details\n";
+            events.forEach(e => {
+                const det = JSON.stringify(e.details || {}).replace(/"/g, '""');
+                csv += `"${e.timestamp}","${e.sessionId}","${e.name}","${e.attribution?.utm_source || ''}","${e.attribution?.utm_medium || ''}","${e.attribution?.utm_campaign || ''}","${e.attribution?.utm_content || ''}","${e.attribution?.utm_term || ''}","${e.geo?.city || ''}","${e.geo?.country || ''}","${e.device?.device || ''}","${e.device?.os || ''}","${det}"\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `clientforge_meta_analytics_${new Date().toISOString().slice(0,10)}.csv`;
+            link.click();
+        }
+
+        window.addEventListener("DOMContentLoaded", () => {
+            buildMetaUrl();
+            refreshDashboard();
+        });
+    </script>
+</body>
+</html>
