@@ -2,5 +2,7 @@
 Client freelance kit/
 *.zip
 *.rar
+*.db
+__pycache__/
 .DS_Store
 Thumbs.db

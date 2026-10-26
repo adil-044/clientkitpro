@@ -1,18 +1,19 @@
 /**
- * ClientForge PRO — Advanced Meta Ad & Customer Journey Telemetry Engine v2.1
- * Bulletproof event capture, immediate execution, and Mintlink checkout attribution
+ * ClientForge PRO — Advanced Meta Ad & Customer Journey Telemetry Engine v3.0
+ * Universal Cloud & Offline Synchronization
  */
 
 (function () {
     const CHECKOUT_BASE_URL = "https://mintlink.in/m/clientkitpro";
+    const CLOUD_SYNC_ENDPOINT = "https://crudcrud.com/api/0c13107d9239434da7e4ee36c6f5d354/events";
+    const LOCAL_SYNC_ENDPOINT = "http://localhost:5000/api/event";
+
     const STORAGE_KEY_SESSION = "clientforge_session_id";
     const STORAGE_KEY_VISITOR = "clientforge_visitor_id";
     const STORAGE_KEY_LOGS = "clientforge_analytics_events";
     const STORAGE_KEY_ATTR = "clientforge_attribution";
-    const STORAGE_KEY_WEBHOOK = "clientforge_webhook_url";
     const BROADCAST_CHANNEL_NAME = "clientforge_analytics_channel";
 
-    // 1. Generate or retrieve persistent IDs
     function getUUID() {
         return 'cf_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now().toString(36);
     }
@@ -29,7 +30,6 @@
         sessionStorage.setItem(STORAGE_KEY_SESSION, sessionId);
     }
 
-    // 2. Parse URL parameters & Attribution
     const urlParams = new URLSearchParams(window.location.search);
     const referrer = document.referrer || "direct";
 
@@ -42,7 +42,6 @@
         if (lower.includes("twitter.com") || lower.includes("t.co") || lower.includes("x.com")) return "Twitter / X";
         if (lower.includes("linkedin.com") || lower.includes("lnkd.in")) return "LinkedIn";
         if (lower.includes("whatsapp")) return "WhatsApp Chat";
-        if (lower.includes("youtube.com")) return "YouTube";
         return ref;
     }
 
@@ -54,9 +53,9 @@
             utm_campaign: urlParams.get("utm_campaign") || (urlParams.get("fbclid") ? "meta_campaign" : "none"),
             utm_content: urlParams.get("utm_content") || "none",
             utm_term: urlParams.get("utm_term") || "none",
-            adset_id: urlParams.get("adset_id") || urlParams.get("hsa_grp") || "none",
-            campaign_id: urlParams.get("campaign_id") || urlParams.get("hsa_cam") || "none",
-            ad_id: urlParams.get("ad_id") || urlParams.get("hsa_ad") || "none",
+            adset_id: urlParams.get("adset_id") || "none",
+            campaign_id: urlParams.get("campaign_id") || "none",
+            ad_id: urlParams.get("ad_id") || "none",
             fbclid: urlParams.get("fbclid") || "none",
             raw_referrer: referrer,
             source_platform: detectReferrerSource(referrer),
@@ -66,7 +65,6 @@
         sessionStorage.setItem(STORAGE_KEY_ATTR, JSON.stringify(attribution));
     }
 
-    // 3. Dynamic CTA Link Enrichment
     function enrichCheckoutLinks() {
         const checkoutAnchors = document.querySelectorAll(`a[href*="mintlink.in"]`);
         const queryParams = new URLSearchParams();
@@ -90,7 +88,6 @@
         });
     }
 
-    // 4. Device Detection
     function getDeviceInfo() {
         const ua = navigator.userAgent;
         let device = "Desktop";
@@ -115,7 +112,6 @@
 
     const deviceInfo = getDeviceInfo();
 
-    // 5. Geolocation Lookup
     let geoInfo = { country: "India", country_code: "IN", city: "Local", ip: "Masked" };
     try {
         const cachedGeo = sessionStorage.getItem("clientforge_geo");
@@ -139,7 +135,6 @@
         }
     } catch (e) {}
 
-    // 6. Broadcast Channel
     let broadcastChannel;
     try {
         if ("BroadcastChannel" in window) {
@@ -147,7 +142,6 @@
         }
     } catch (e) {}
 
-    // 7. Core Event Logger
     function logEvent(eventName, eventDetails = {}) {
         const eventObj = {
             id: 'ev_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 6),
@@ -162,6 +156,7 @@
             details: eventDetails
         };
 
+        // 1. Save local
         try {
             const raw = localStorage.getItem(STORAGE_KEY_LOGS);
             const events = raw ? JSON.parse(raw) : [];
@@ -170,41 +165,35 @@
             localStorage.setItem(STORAGE_KEY_LOGS, JSON.stringify(events));
         } catch (e) {}
 
+        // 2. Broadcast local tab
         if (broadcastChannel) {
-            try {
-                broadcastChannel.postMessage({ type: "NEW_EVENT", event: eventObj });
-            } catch (err) {}
+            try { broadcastChannel.postMessage({ type: "NEW_EVENT", event: eventObj }); } catch (err) {}
         }
 
-        // Webhook notification (Discord / Telegram) if configured
-        notifyWebhook(eventObj);
+        // 3. SYNCHRONIZE GLOBALLY TO CLOUD (Available across all devices)
+        try {
+            fetch(CLOUD_SYNC_ENDPOINT, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(eventObj),
+                keepalive: true
+            }).catch(() => {});
+        } catch (err) {}
 
-        // Meta Pixel
+        // 4. SYNCHRONIZE TO LOCAL OFFLINE DASHBOARD IF RUNNING
+        try {
+            fetch(LOCAL_SYNC_ENDPOINT, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(eventObj),
+                keepalive: true
+            }).catch(() => {});
+        } catch (err) {}
+
+        // 5. Trigger Meta Pixel
         fireMetaPixelEvent(eventName, eventDetails);
 
         return eventObj;
-    }
-
-    // Optional Webhook Push for external visitor visibility
-    function notifyWebhook(ev) {
-        const webhookUrl = localStorage.getItem(STORAGE_KEY_WEBHOOK);
-        if (!webhookUrl) return;
-
-        if (ev.name === "pageview" || ev.name === "checkout_click") {
-            try {
-                const isCheckout = ev.name === "checkout_click";
-                const payload = {
-                    content: isCheckout ? 
-                        `🚨 **MINTLINK CHECKOUT CLICK!** (₹99)\nProspect: ${ev.geo.city}, ${ev.geo.country} (${ev.device.device} - ${ev.device.os})\nCampaign: \`${ev.attribution.utm_campaign}\` | Ad: \`${ev.attribution.utm_content}\`` :
-                        `👀 **New Ad Visitor!**\nFrom: ${ev.geo.city}, ${ev.geo.country} | Platform: ${ev.attribution.source_platform}\nCampaign: \`${ev.attribution.utm_campaign}\``
-                };
-                fetch(webhookUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                }).catch(() => {});
-            } catch (e) {}
-        }
     }
 
     function fireMetaPixelEvent(name, details) {
@@ -212,11 +201,7 @@
             try {
                 if (name === "pageview") {
                     window.fbq('track', 'PageView');
-                    window.fbq('track', 'ViewContent', {
-                        content_name: 'ClientForge PRO',
-                        value: 99.00,
-                        currency: 'INR'
-                    });
+                    window.fbq('track', 'ViewContent', { content_name: 'ClientForge PRO', value: 99.00, currency: 'INR' });
                 } else if (name === "checkout_click") {
                     window.fbq('track', 'InitiateCheckout', {
                         content_name: 'ClientForge PRO',
@@ -229,7 +214,6 @@
         }
     }
 
-    // 8. Scroll Depth Tracker
     const scrollMilestones = { 25: false, 50: false, 75: false, 90: false, 100: false };
     function handleScroll() {
         const h = document.documentElement, b = document.body;
@@ -246,7 +230,6 @@
 
     window.addEventListener("scroll", handleScroll, { passive: true });
 
-    // 9. Time on Page
     let secondsSpent = 0;
     const timeMilestones = [5, 15, 30, 60, 120, 300];
     let timeIdx = 0;
@@ -258,7 +241,6 @@
         }
     }, 1000);
 
-    // 10. Click Listeners
     function setupClickTrackers() {
         enrichCheckoutLinks();
 
@@ -292,7 +274,6 @@
         }, true);
     }
 
-    // 11. BULLETPROOF INITIALIZATION (Fixed race condition)
     let initialized = false;
     function initTracker() {
         if (initialized) return;

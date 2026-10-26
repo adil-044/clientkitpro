@@ -72,6 +72,28 @@
 </head>
 <body class="antialiased min-h-screen flex flex-col selection:bg-brand-500 selection:text-white">
 
+    <!-- Private PIN Lock Overlay -->
+    <div id="pin-lock-overlay" class="fixed inset-0 z-50 bg-dark-950/95 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="glass-panel max-w-sm w-full p-8 rounded-3xl border border-brand-500/30 text-center space-y-5 shadow-2xl">
+            <div class="w-14 h-14 rounded-2xl bg-brand-600/20 text-brand-400 mx-auto flex items-center justify-center text-2xl font-bold">
+                🔒
+            </div>
+            <div>
+                <h3 class="text-xl font-black text-white">Private Telemetry</h3>
+                <p class="text-xs text-slate-400 mt-1">Enter your 4-digit PIN to access live Meta Ad analytics</p>
+            </div>
+            <div class="space-y-3">
+                <input type="password" id="pin-input" maxlength="8" placeholder="Enter PIN (Default: 9926)" 
+                       class="w-full text-center text-lg tracking-widest bg-dark-900 border border-dark-700 rounded-xl py-3 text-white focus:outline-none focus:border-brand-500"
+                       onkeydown="if(event.key==='Enter') checkPin()">
+                <button onclick="checkPin()" class="w-full py-3 bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-xl text-sm transition-all shadow-glow-brand">
+                    Unlock Dashboard
+                </button>
+            </div>
+            <p class="text-[11px] text-slate-500">Only you have access &bull; Synchronized across all devices</p>
+        </div>
+    </div>
+
     <!-- Top Navigation -->
     <header class="glass-panel border-b border-dark-700/60 sticky top-0 z-40 bg-dark-950/85">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -324,9 +346,56 @@
     <!-- Analytics Dashboard Engine JS -->
     <script>
         const STORAGE_KEY_LOGS = "clientforge_analytics_events";
+        const CLOUD_SYNC_ENDPOINT = "https://crudcrud.com/api/0c13107d9239434da7e4ee36c6f5d354/events";
+        const CORRECT_PIN = "9926";
+
         let funnelChartInstance = null;
         let sourceChartInstance = null;
         let cachedSessions = {};
+
+        // PIN Security
+        function checkPin() {
+            const input = document.getElementById("pin-input").value.trim();
+            if (input === CORRECT_PIN) {
+                sessionStorage.setItem("cf_pin_verified", "true");
+                document.getElementById("pin-lock-overlay").classList.add("hidden");
+                syncFromCloud();
+            } else {
+                alert("Incorrect PIN. Access denied.");
+            }
+        }
+
+        // Check if unlocked or URL parameter ?pin=9926
+        function verifyAccess() {
+            const urlPin = new URLSearchParams(window.location.search).get("pin");
+            if (urlPin === CORRECT_PIN || sessionStorage.getItem("cf_pin_verified") === "true") {
+                sessionStorage.setItem("cf_pin_verified", "true");
+                document.getElementById("pin-lock-overlay").classList.add("hidden");
+            }
+        }
+
+        // Cloud Synchronization Engine (Fetches all devices)
+        async function syncFromCloud() {
+            try {
+                const res = await fetch(CLOUD_SYNC_ENDPOINT);
+                if (res.ok) {
+                    const cloudEvents = await res.json();
+                    if (Array.isArray(cloudEvents)) {
+                        const localEvents = getEvents();
+                        const map = new Map();
+                        // Add cloud events
+                        cloudEvents.forEach(e => { if (e && e.id) map.set(e.id, e); });
+                        // Add local events
+                        localEvents.forEach(e => { if (e && e.id) map.set(e.id, e); });
+                        const merged = Array.from(map.values()).sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+                        localStorage.setItem(STORAGE_KEY_LOGS, JSON.stringify(merged.slice(0, 500)));
+                    }
+                }
+            } catch (err) {
+                // Cloud fetch fallback to local
+            }
+            refreshDashboard();
+        }
 
         // Real-time broadcast channel listener
         if ("BroadcastChannel" in window) {
@@ -722,10 +791,11 @@
         }
 
         window.addEventListener("DOMContentLoaded", () => {
+            verifyAccess();
             buildMetaUrl();
-            refreshDashboard();
-            // Continuous live auto-refresh
-            setInterval(refreshDashboard, 2500);
+            syncFromCloud();
+            // Continuous live auto-refresh & cloud sync every 3s
+            setInterval(syncFromCloud, 3000);
         });
     </script>
 </body>
