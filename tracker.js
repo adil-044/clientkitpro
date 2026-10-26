@@ -1,5 +1,5 @@
-/**
- * ClientForge PRO — Advanced Meta Ad & Customer Journey Telemetry Engine v3.0
+﻿/**
+ * ClientForge PRO â€” Advanced Meta Ad & Customer Journey Telemetry Engine v3.0
  * Universal Cloud & Offline Synchronization
  */
 
@@ -172,9 +172,9 @@
 
         // 3. SYNCHRONIZE GLOBALLY TO CLOUD (Available across all devices)
         try {
-            fetch(CLOUD_SYNC_ENDPOINT, {
+            fetch(SYNC_ENDPOINT, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { "Content-Type": "application/json", "ngrok-skip-browser-warning": "1" },
                 body: JSON.stringify(eventObj),
                 keepalive: true
             }).catch(() => {});
@@ -184,7 +184,7 @@
         try {
             fetch(LOCAL_SYNC_ENDPOINT, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { "Content-Type": "application/json", "ngrok-skip-browser-warning": "1" },
                 body: JSON.stringify(eventObj),
                 keepalive: true
             }).catch(() => {});
