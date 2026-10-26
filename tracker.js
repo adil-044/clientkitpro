@@ -5,7 +5,7 @@
 
 (function () {
     const CHECKOUT_BASE_URL = "https://mintlink.in/m/clientkitpro";
-    const CLOUD_SYNC_ENDPOINT = "https://crudcrud.com/api/0c13107d9239434da7e4ee36c6f5d354/events";
+    const SYNC_ENDPOINT = "https://noncoplanar-unfrizzled-marilyn.ngrok-free.dev/api/event";
     const LOCAL_SYNC_ENDPOINT = "http://localhost:5000/api/event";
 
     const STORAGE_KEY_SESSION = "clientforge_session_id";
