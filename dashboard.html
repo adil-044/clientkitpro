@@ -724,6 +724,8 @@
         window.addEventListener("DOMContentLoaded", () => {
             buildMetaUrl();
             refreshDashboard();
+            // Continuous live auto-refresh
+            setInterval(refreshDashboard, 2500);
         });
     </script>
 </body>
